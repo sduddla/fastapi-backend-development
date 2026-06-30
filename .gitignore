@@ -1,0 +1,25 @@
+# 가상환경
+.fastapi-todos/
+venv/
+.venv/
+env/
+
+.env
+
+# 파이썬 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# 학습/테스트용 스크립트
+hash_test.py
+jwt_create.py
+jwt_checked.py
+jwt_decoding.py
