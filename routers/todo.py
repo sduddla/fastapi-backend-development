@@ -151,7 +151,18 @@ def upload_file(file: UploadFile = File(...)): # 업로드 파일을 매개변�
 # 파일 다운로드
 @router.get("/files/{filename}")
 def download_file(filename: str):
-    file_path = UPLOAD_DIR / filename # 다운로드할 파일 경로 생성
+    file_path = (UPLOAD_DIR / filename).resolve() # 다운로드할 파일 경로 생성
+    # 경로 조작(../) 방지: UPLOAD_DIR 밖을 벗어나면 거부
+    if UPLOAD_DIR.resolve() not in file_path.parents:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="잘못된 파일 경로입니다."
+        )
+    if not file_path.is_file(): # 파일 존재 여부 확인
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="파일을 찾을 수 없습니다."
+        )
     return FileResponse(
         path=file_path,
         filename=filename,
