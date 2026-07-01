@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException, Depends, BackgroundTasks
 from sqlalchemy import select
 from schema.request import UserSignUpRequest, UserLoginRequest
 from database.db_connection import get_session
@@ -10,6 +10,12 @@ from auth.token import create_access_token
 
 router = APIRouter(tags=["User"])
 
+# 회원가입 환영 메시지 출력
+def send_welcome_email(email: str):
+    import time
+    time.sleep(5)
+    print(f"Send welcome email to {email}...")
+
 # 회원가입
 @router.post(
     "/users/signup",
@@ -18,6 +24,7 @@ router = APIRouter(tags=["User"])
 )
 def signup_user_handler(
         body: UserSignUpRequest,
+        background_tasks: BackgroundTasks,
         session = Depends(get_session)
 ):
     # 이메일 중복 검사
@@ -42,6 +49,8 @@ def signup_user_handler(
     session.commit()
 
     session.refresh(user) # DB에서 생성된 값(id, created_at) 반영
+    # 백그라운드 태스크 등록
+    background_tasks.add_task(send_welcome_email, user.email)
     return user # 회원가입 결과 반환
 
 # 로그인 (세션 방식)
