@@ -1,4 +1,4 @@
-from fastapi import HTTPException, APIRouter, Depends
+from fastapi import HTTPException, APIRouter, Depends, UploadFile, File
 from sqlalchemy import select
 from starlette import status
 from database.db_connection import get_session
@@ -7,9 +7,13 @@ from schema.request import TodoCreateRequest, TodoUpdateRequest
 from schema.response import TodoResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from auth.token import decode_access_token
+from pathlib import Path
+import shutil
+from fastapi.responses import FileResponse
 
 router = APIRouter(tags=["Todo"])
 bearer = HTTPBearer(auto_error=False) # Bearer 인증 스키마 생성
+UPLOAD_DIR = Path("uploads") # 파일을 저장할 폴더 경로 생성
 
 # 전체 할 일 조회
 @router.get(
@@ -152,3 +156,27 @@ def delete_todo_handler(
     )
     # finally:
         # session.close()
+
+# 파일 업로드
+@router.post("/upload")
+def upload_file(file: UploadFile = File(...)): # 업로드 파일을 매개변수로 선언
+    if not file.filename: # 파일 이름 없으면 거부
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="파일 이름이 없습니다."
+        )
+    UPLOAD_DIR.mkdir(exist_ok=True) # 업로드할 폴더 준비
+    file_path = UPLOAD_DIR / file.filename # 저장할 파일 경로 생성
+    with file_path.open("wb") as buffer: # 업로드된 파일 내용을 디스크에 저장
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename} # 업로드 결과 반환
+
+# 파일 다운로드
+@router.get("/files/{filename}")
+def download_file(filename: str):
+    file_path = UPLOAD_DIR / filename # 다운로드할 파일 경로 생성
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="application/octet-stream",
+    )
