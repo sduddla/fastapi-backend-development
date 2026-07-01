@@ -5,14 +5,12 @@ from database.db_connection import get_session
 from models import Todo
 from schema.request import TodoCreateRequest, TodoUpdateRequest
 from schema.response import TodoResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from auth.token import decode_access_token
+from auth.dependencies import get_current_user_id
 from pathlib import Path
 import shutil
 from fastapi.responses import FileResponse
 
 router = APIRouter(tags=["Todo"])
-bearer = HTTPBearer(auto_error=False) # Bearer 인증 스키마 생성
 UPLOAD_DIR = Path("uploads") # 파일을 저장할 폴더 경로 생성
 
 # 전체 할 일 조회
@@ -23,13 +21,8 @@ UPLOAD_DIR = Path("uploads") # 파일을 저장할 폴더 경로 생성
 )
 def get_todos_handler(
         session = Depends(get_session),
-        authorization: HTTPAuthorizationCredentials | None = Depends(bearer)
+        user_id: int | None = Depends(get_current_user_id)
 ):
-    user_id = None
-    # 토큰 존재 여부 확인 및 사용자 식별
-    if authorization:
-        token = authorization.credentials
-        user_id = decode_access_token(token)
     # session = SessionFactory()
     # try:
     stmt = select(Todo).where(Todo.user_id == user_id)
@@ -47,12 +40,8 @@ def get_todos_handler(
 def get_todo_handler(
         todo_id: int,
         session = Depends(get_session),
-        authorization: HTTPAuthorizationCredentials | None = Depends(bearer)
+        user_id: int | None = Depends(get_current_user_id)
 ):
-    user_id = None
-    if authorization:
-        access_token = authorization.credentials
-        user_id = decode_access_token(access_token)
     # session = SessionFactory()
     # try:
     stmt = select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
@@ -75,12 +64,8 @@ def get_todo_handler(
 def create_todo_handler(
         body: TodoCreateRequest,
         session = Depends(get_session),
-        authorization: HTTPAuthorizationCredentials | None = Depends(bearer)
+        user_id: int | None = Depends(get_current_user_id)
 ):
-    user_id = None
-    if authorization:
-        access_token = authorization.credentials
-        user_id = decode_access_token(access_token)
     # session = SessionFactory()
     # try:
     todo = Todo( # ORM 모델 객체 생성
@@ -104,12 +89,8 @@ def update_todo_handler(
         todo_id: int,
         body: TodoUpdateRequest,
         session = Depends(get_session),
-        authorization: HTTPAuthorizationCredentials | None = Depends(bearer)
+        user_id: int | None = Depends(get_current_user_id)
 ):
-    user_id = None
-    if authorization:
-        access_token = authorization.credentials
-        user_id = decode_access_token(access_token)
     # session = SessionFactory()
     # try:
     stmt = select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
@@ -136,12 +117,8 @@ def update_todo_handler(
 def delete_todo_handler(
         todo_id: int,
         session = Depends(get_session),
-        authorization: HTTPAuthorizationCredentials | None = Depends(bearer)
+        user_id: int | None = Depends(get_current_user_id)
 ):
-    user_id = None
-    if authorization:
-        access_token = authorization.credentials
-        user_id = decode_access_token(access_token)
     # session = SessionFactory()
     # try:
     stmt = select(Todo).where(Todo.id == todo_id, Todo.user_id == user_id)
