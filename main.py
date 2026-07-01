@@ -8,12 +8,15 @@ from database.orm import Base # ORM 기준 클래스 임포트
 from routers.todo import router as todo_router
 from routers.user import router as user_router
 from starlette.middleware.sessions import SessionMiddleware # 세션 미들웨어 임포트
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(_):
+    Base.metadata.create_all(bind=engine)
+    yield
 
 load_dotenv() # .env 파일의 환경변수 로드
-
-Base.metadata.create_all(bind=engine) # 테이블 생성 지시
-
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.include_router(todo_router)
 app.include_router(user_router)
 
